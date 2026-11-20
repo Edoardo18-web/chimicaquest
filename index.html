@@ -30,7 +30,8 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- Struttura ---------- */
 #app { position: fixed; top: 0; left: 0; right: 0; height: var(--vh, 100dvh); overflow: hidden; display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; position: relative; }
-#top { height: var(--top); display: flex; align-items: center; gap: 10px; padding: 0 14px; flex: none; }
+/* la barra scende sotto la Dynamic Island / tacca: env(safe-area-inset-top) è lo spazio riservato dal sistema */
+#top { height: calc(var(--top) + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 14px 0; display: flex; align-items: center; gap: 10px; flex: none; }
 #top .logo { font-weight: 800; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; margin-right: auto; }
 #top .logo i { font-style: normal; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
   background: linear-gradient(135deg, var(--cy), var(--vi)); color: #04101f; font-weight: 900; font-size: 13px; }
