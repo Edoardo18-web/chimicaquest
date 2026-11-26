@@ -179,21 +179,6 @@ h1, h2, h3, p { margin: 0; }
 .pop-leg i { font-style: normal; font-weight: 800; color: var(--txt); margin-right: 3px; }
 .pop-leg i.en, .pop-num strong.en { color: #7dd3fc; }
 .pop-hint { text-align: center; color: var(--muted); font-size: 13px; margin: 6px 0; min-height: 46px; display: grid; place-items: center; }
-.pop-hint.mini { min-height: 0; margin: -4px 0 8px; font-size: 12px; }
-.pop-legame { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin: 4px 0 8px; border-radius: 14px; background: var(--glass2); border: 1px solid var(--linea); }
-.pl-el { position: relative; width: 52px; height: 56px; flex: none; border-radius: 11px; display: grid; place-items: center; font-size: 21px; font-weight: 800; background: color-mix(in srgb, var(--col) 30%, transparent); border: 1px solid color-mix(in srgb, var(--col) 60%, transparent); }
-.pl-el i { position: absolute; top: 2px; left: 4px; font-size: 9.5px; font-style: normal; font-weight: 700; opacity: .85; }
-.pl-el small { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center; font-size: 9.5px; font-weight: 700; color: #7dd3fc; }
-.pl-centro { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; font-size: 12.5px; color: var(--muted); }
-.pl-centro b { color: var(--txt); font-size: 14px; }
-.pl-centro strong { color: #fff; }
-.pl-tipo { font-style: normal; font-weight: 800; font-size: 13.5px; padding: 2px 10px; border-radius: 999px; background: rgba(255, 255, 255, .08); color: var(--txt); }
-.pl-tipo.puro, .pl-tipo.apolare { background: rgba(56, 189, 248, .2); color: #7dd3fc; }
-.pl-tipo.polare { background: rgba(250, 204, 21, .2); color: #fde047; }
-.pl-tipo.ionico { background: rgba(248, 113, 113, .22); color: #fca5a5; }
-.pl-tipo.metallico { background: rgba(148, 163, 184, .22); color: #cbd5e1; }
-.pl-centro small { font-size: 11.5px; }
-.pl-nota { font-size: 11.5px; color: #fde68a; margin: -4px 2px 8px; line-height: 1.4; }
 .pop-scheda { display: flex; gap: 12px; align-items: center; padding: 8px 12px; margin: 4px 0 8px; border-radius: 14px; background: color-mix(in srgb, var(--col) 14%, transparent); border: 1px solid color-mix(in srgb, var(--col) 60%, transparent); }
 .pop-simbolo { position: relative; width: 58px; height: 58px; flex: none; border-radius: 12px; display: grid; place-items: center; font-size: 26px; font-weight: 800; background: color-mix(in srgb, var(--col) 30%, transparent); }
 .pop-simbolo i { position: absolute; top: 3px; left: 5px; font-size: 11px; font-style: normal; font-weight: 700; opacity: .85; }
@@ -2721,7 +2706,7 @@ document.addEventListener("input", e => {
 </script>
 <script>
 /* Tavola periodica consultabile durante i quiz (pulsante 🧪 in alto): per ogni elemento Z, A, massa molare ed elettronegatività.
-   Con «⇄ Legame» si toccano due elementi e si leggono ΔEN e la polarità del legame. */
+   Volutamente non dice il tipo di legame tra due elementi né la regola di ΔEN: quello va trovato da sé. */
 
 // A = numero di massa dell'isotopo più abbondante. Per quasi tutti coincide con la massa arrotondata;
 // qui sono elencati gli elementi in cui l'isotopo più abbondante differisce dalla massa media arrotondata.
@@ -2738,11 +2723,9 @@ function massaMolareTesto(z) {
 }
 
 // Elettronegatività di Pauling (ELEMENTI[z - 1][4]); null per i gas nobili leggeri e per alcuni elementi pesanti
-const enDi = z => ELEMENTI[z - 1][4];
 const enTesto = en => en == null ? "—" : en.toFixed(2).replace(".", ",");
-const METALLI = new Set(["am", "at", "tr", "la", "ac", "mp"]);
 
-let popTavola = { z: null, z2: null, modo: "dettaglio", legame: false };
+let popTavola = { z: null, modo: "dettaglio" };
 
 function cardElemento(z) {
   const [, s, nome, , en, cat] = ELEMENTI[z - 1], col = CATEGORIE[cat][1];
@@ -2752,48 +2735,8 @@ function cardElemento(z) {
     '<span>EN <strong class="en">' + enTesto(en) + '</strong></span></div></div></div>';
 }
 
-// Tipo di legame dalla differenza di elettronegatività, con la regola del paragrafo «Polarità di legame»:
-// atomi uguali covalente puro · fino a 0,4 non polare · da 0,5 a 1,9 polare · da 2,0 ionico
-function tipoLegame(z1, z2) {
-  const [, s1, , , en1, c1] = ELEMENTI[z1 - 1], [, s2, , , en2, c2] = ELEMENTI[z2 - 1];
-  if (en1 == null || en2 == null) {
-    const zn = en1 == null ? z1 : z2, s = ELEMENTI[zn - 1][1], gn = ELEMENTI[zn - 1][5] === "gn";
-    return { cls: "nd", tipo: "Non calcolabile", d: null, nota: "L'elettronegatività di " + s + " non è definita" + (gn ? ": è un gas nobile e non forma legami." : ".") };
-  }
-  const d = Math.round(Math.abs(en1 - en2) * 100) / 100;
-  const meno = en1 <= en2 ? s1 : s2, piu = en1 <= en2 ? s2 : s1;
-  const met1 = METALLI.has(c1), met2 = METALLI.has(c2);
-  if (met1 && met2) return { cls: "metallico", tipo: "Legame metallico", d: null, nota: "Tra due metalli non si usa ΔEN: gli elettroni di valenza sono condivisi da tutti gli atomi (mare di elettroni)." };
-  let r;
-  if (z1 === z2) r = { cls: "puro", tipo: "Covalente puro", cariche: "elettroni condivisi in modo uguale" };
-  else if (d <= 0.4) r = { cls: "apolare", tipo: "Covalente non polare", cariche: "cariche parziali trascurabili" };
-  else if (d < 2) r = { cls: "polare", tipo: "Covalente polare", cariche: "δ+ su " + meno + " · δ− su " + piu };
-  else r = { cls: "ionico", tipo: "Ionico", cariche: "catione " + meno + " · anione " + piu };
-  r.d = d;
-  const note = [];
-  if (z1 !== z2 && d >= 0.35 && d <= 0.55) note.push("ΔEN è vicino a 0,4, al limite tra non polare e polare: se la domanda dà valori arrotondati (H 2,1 · C 2,5 · N 3,0 · O 3,5), usa quelli.");
-  if (d >= 1.85 && d <= 2.05) note.push("ΔEN è vicino a 2, al limite tra polare e ionico." + ((met1 || met2) ? " Con un metallo e un non metallo il composto di solito si considera ionico (per esempio MgCl₂)." : ""));
-  if ((s1 === "H" && ["am", "at"].includes(c2)) || (s2 === "H" && ["am", "at"].includes(c1))) note.push("Con i metalli dei gruppi 1 e 2 l'idrogeno forma idruri ionici (H⁻), anche se ΔEN è minore di 2.");
-  r.nota = note.join(" ");
-  return r;
-}
-
-function cardLegame(z1, z2) {
-  const t = tipoLegame(z1, z2);
-  const box = z => { const [, s, , , en, cat] = ELEMENTI[z - 1]; return '<div class="pl-el" style="--col:' + CATEGORIE[cat][1] + '"><i>' + z + '</i>' + s + '<small>' + enTesto(en) + '</small></div>'; };
-  const calc = t.d == null ? "" : '<span>ΔEN = |' + enTesto(enDi(z1)) + ' − ' + enTesto(enDi(z2)) + '| = <strong>' + enTesto(t.d) + '</strong></span>';
-  return '<div class="pop-legame">' + box(z1) +
-    '<div class="pl-centro"><b>' + ELEMENTI[z1 - 1][1] + '–' + ELEMENTI[z2 - 1][1] + '</b>' + calc + '<em class="pl-tipo ' + t.cls + '">' + t.tipo + '</em>' + (t.cariche ? '<small>' + t.cariche + '</small>' : "") + '</div>' +
-    box(z2) + '</div>' + (t.nota ? '<p class="pl-nota">' + t.nota + '</p>' : "");
-}
-
 function schedaPop() {
-  const { z, z2, legame } = popTavola;
-  if (legame) {
-    if (!z) return '<p class="pop-hint">⇄ Tocca due elementi: vedrai ΔEN e il tipo di legame.</p>';
-    if (!z2) return cardElemento(z) + '<p class="pop-hint mini">Ora tocca il secondo elemento (lo stesso, per un legame tra atomi uguali).</p>';
-    return cardLegame(z, z2);
-  }
+  const { z } = popTavola;
   return z ? cardElemento(z) : '<p class="pop-hint">Tocca un elemento per vederlo in grande.</p>';
 }
 
@@ -2802,7 +2745,7 @@ function disegnaTavolaPop() {
   let celle = "";
   ELEMENTI.forEach(e => {
     const [z, s, , , en, cat] = e, [r, c] = posizioneElemento(z), col = CATEGORIE[cat][1];
-    celle += '<button class="pel' + (popTavola.z === z || popTavola.z2 === z ? " sel" : "") + '" data-pz="' + z + '" style="grid-row:' + r + ';grid-column:' + c + ';background:' + col + '33;border-color:' + col + 'aa">' +
+    celle += '<button class="pel' + (popTavola.z === z ? " sel" : "") + '" data-pz="' + z + '" style="grid-row:' + r + ';grid-column:' + c + ';background:' + col + '33;border-color:' + col + 'aa">' +
       '<i>' + z + '</i><em>' + numeroMassa(z) + '</em><b>' + s + '</b><small>' + massaMolareTesto(z) + '</small><span class="pen">EN ' + enTesto(en) + '</span></button>';
   });
   celle += '<div class="pel segnaposto" style="grid-row:6;grid-column:3">57–71</div><div class="pel segnaposto" style="grid-row:7;grid-column:3">89–103</div><div style="grid-row:8;grid-column:1/19;height:6px"></div>';
@@ -2812,14 +2755,12 @@ function disegnaTavolaPop() {
       '<button class="pop-chiudi" data-pchiudi aria-label="Chiudi la tavola">✕</button></div>' +
     '<div class="pop-chips">' +
       '<button class="chip' + (popTavola.modo === "dettaglio" ? " on" : "") + '" data-pmodo="dettaglio">Dettaglio</button>' +
-      '<button class="chip' + (popTavola.modo === "compatta" ? " on" : "") + '" data-pmodo="compatta">Compatta</button>' +
-      '<button class="chip' + (popTavola.legame ? " on" : "") + '" data-plegame>⇄ Legame</button></div>' +
+      '<button class="chip' + (popTavola.modo === "compatta" ? " on" : "") + '" data-pmodo="compatta">Compatta</button></div>' +
     '<div class="pop-leg"><span><i>Z</i> numero atomico</span><span><i>A</i> numero di massa</span><span><i>M</i> massa molare (g/mol)</span><span><i class="en">EN</i> elettronegatività (Pauling)</span></div>' +
     '<div id="pop-scheda">' + schedaPop() + '</div>' +
     '<div class="pop-scroll"><div class="pop-griglia">' + celle + '</div></div>' +
     '<div class="legenda pop-cat">' + Object.values(CATEGORIE).map(([n, c]) => '<span><i style="background:' + c + '"></i>' + n + '</span>').join("") + '</div>' +
-    '<p class="pop-nota">Polarità del legame, ΔEN = |EN₁ − EN₂|: atomi uguali covalente puro · fino a 0,4 non polare · da 0,5 a 1,9 polare · da 2,0 ionico. ' +
-      'A è il numero di massa dell\'isotopo più abbondante; tra parentesi gli elementi senza isotopi stabili (isotopo più stabile).</p>';
+    '<p class="pop-nota">A è il numero di massa dell\'isotopo più abbondante. Tra parentesi: elementi senza isotopi stabili (numero di massa dell\'isotopo più stabile).</p>';
 }
 
 function apriTavolaPop() {
@@ -2837,13 +2778,10 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-pchiudi]")) return chiudiTavolaPop();
   const m = e.target.closest("[data-pmodo]");
   if (m) { popTavola.modo = m.dataset.pmodo; return disegnaTavolaPop(); }
-  if (e.target.closest("[data-plegame]")) { popTavola.legame = !popTavola.legame; popTavola.z2 = null; return disegnaTavolaPop(); }
   const p = e.target.closest("[data-pz]");
   if (p) {
-    const z = Number(p.dataset.pz);
-    if (popTavola.legame && popTavola.z && !popTavola.z2) popTavola.z2 = z; // secondo elemento del legame
-    else { popTavola.z = z; popTavola.z2 = null; }
-    $$(".pel", ov).forEach(x => { const n = Number(x.dataset.pz); x.classList.toggle("sel", n === popTavola.z || n === popTavola.z2); });
+    popTavola.z = Number(p.dataset.pz);
+    $$(".pel", ov).forEach(x => x.classList.toggle("sel", x === p));
     $("#pop-scheda", ov).innerHTML = schedaPop();
   }
 }, true);
